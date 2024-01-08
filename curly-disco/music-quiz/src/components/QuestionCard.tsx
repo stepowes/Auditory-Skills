@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { AnswerObject } from '../User Experience/Level/Game'
+import { AnswerObject } from '../User Experience/Level/IntervalQuiz'
 import {Wrapper, ButtonWrapper} from './QuestionCard.styles';
 
 type Props ={

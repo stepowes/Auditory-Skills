@@ -1,14 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-
 //Styles
 import { GlobalStyle, Wrapper, NextButton, RecordButton, AgainButton, GameStartButton} from '../../GameContent.styles';
-
 import AnswerButtonsTwo from '../../AnswerButtonsTwo';
 import {useNavigate, useLocation} from 'react-router-dom';
 import { AiFillSound } from 'react-icons/ai';
 import axios from 'axios';
-
 //Audio 
 // TODO LATER: Make audio imports dynamic based on question amount
 let Audio1: string | undefined;
@@ -21,7 +18,6 @@ let Audio7: string | undefined;
 let Audio8: string | undefined;
 let Audio9: string | undefined;
 let Audio10: string | undefined;
-
 try {
   Audio1 = require('../../mp3 files/problem1.mp3');
   Audio2 = require('../../mp3 files/problem2.mp3');
@@ -38,16 +34,13 @@ try {
   // Handle the error as needed
 }
 
-
 export type AnswerObject = {
   question: string; // This is the audio file I am willing to consider
   answer: string;
   correct: boolean;
   correctAnswer: string;
 };
-
 const TOTAL_QUESTIONS = 10;
-
 
 const Game = () => {
   // useEffect(() => {
@@ -57,21 +50,18 @@ const Game = () => {
   //   };
   // }, []);
 
-
    const location = useLocation();
    const difficultyFromUrl = new URLSearchParams(location.search).get('difficulty');
    
-
    const[loading, setLoading] = useState(false); // My game is loaded
-
    /* change the type of questions into the audio files created */
    
    const[number, setNumber] = useState(0); // the question number
   
    const questions = [Audio1, Audio2, Audio3, Audio4, Audio5, Audio6, Audio7, Audio8, Audio9, Audio10];
-
    const audioRef = useRef(new Audio());
-
+   const [startTime, setStartTime] = useState<number | null>(null);
+   const [questionTimes, setQuestionTimes] = useState<number[]>([])
 
 
    const playSound = () => {
@@ -82,24 +72,19 @@ const Game = () => {
            audioRef.current.play().catch(e => console.error('Error playing sound: ', e));
        }
    }
-
    const[currentAnswer, setCurrentAnswer] = useState<{
         answer: string;
         isCorrect: boolean;
         correctAnswer: string
    } | null>(null);
-
    const[userAnswers, setUserAnswers] = useState<string[]>([]); // the answers from the users
-
    const[score, setScore] = useState(0); // the score each user receives
    const[gameOver, setGameOver] = useState(true); // the game is Over
-
    const[timer, setTimer] = useState({
       seconds: 0,
       minutes: 0,
       hours: 0
    });
-
    type QuestionsData = {
     [questionId: number]: {
       [key: string]: string | number;
@@ -110,10 +95,8 @@ const Game = () => {
    //let correctAnswers: string[] = [];
    const[correctAnswers, setCorrectAnswers] = useState<string[]>([]);
    //console.log("currentAnswer:", currentAnswer, "showCorrectAnswer:", showCorrectAnswer);
-
    const [totalTime, setTotalTime] = useState(0);
    const [timerRunning, setTimerRunning] = useState(false);
-
    useEffect(()=>{
     let interval: NodeJS.Timeout;
     if (timerRunning) {
@@ -138,15 +121,12 @@ const Game = () => {
     } 
     return () => clearInterval(interval);
    }, [timerRunning]);
-
    const navigate = useNavigate();
-
    //console.log(fetchQuizQuestions(TOTAL_QUESTIONS, Difficulty.EASY)); 
    const dataToSend = {
     difficulty: difficultyFromUrl,
     currentUser: localStorage.getItem('username')
    };
-
    const startTrivial = async (e: React.MouseEvent<HTMLElement>) => {
         //console.log("Click event:", e);
         
@@ -156,6 +136,7 @@ const Game = () => {
         }
         // We want to make the API call(start the game) 
         // with the function called async().
+        setStartTime(Date.now());
         setLoading(true);
         
         
@@ -170,7 +151,6 @@ const Game = () => {
               withCredentials: false,
               responseType: 'json',
           });
-
           const questionsData = response.data.questionsData;
           console.log(questionsData);
           setQuestionsData(questionsData)
@@ -196,22 +176,21 @@ const Game = () => {
         setTimerRunning(true);
         setGameOver(false);
         setLoading(false);
-
         //playSound();
     };
-
     useEffect(() => {
       if (!gameOver && !loading) {
         playSound();
       }
     }, [number]);
-
     const saveGameData = async () => {
-    // Construct the data to be sent to the backend
+      const totalQuestionTime = questionTimes.reduce((acc, time) => acc + time, 0);
+      // Construct the data to be sent to the backend
       const gameData = {
           username: localStorage.getItem('username'), // Assuming you have stored the username in localStorage
           score: score,
-          totalTime: totalTime,
+          totalTime: totalQuestionTime,
+          questionTimes: questionTimes,
           userAnswers: userAnswers,
           questionsData: questionsData,
           difficulty: dataToSend['difficulty'],
@@ -244,6 +223,15 @@ const Game = () => {
         saveGameData();
       }
     }, [gameOver, userAnswers]);
+   
+    const calculateTimeTaken = () => {
+      if (startTime) {
+          const endTime = Date.now();
+          const timeTakenInSeconds = (endTime - startTime) / 1000; // convert to seconds
+          return parseFloat(timeTakenInSeconds.toFixed(3)); // round to thousandths
+      }
+      return 0;
+    };
     
    const CheckAnswer = (answer_selected: string) => {
       //console.log("The current answer is: ", answer_selected);
@@ -251,7 +239,9 @@ const Game = () => {
       // if (userAnswers.length === 0 || questions.length === 0) {
       //      return;
       // }
-
+      const timeTaken = calculateTimeTaken();
+      setQuestionTimes((prevTimes) => [...prevTimes, timeTaken]);
+      setStartTime(Date.now())
       const correct_answer = correctAnswers[number];
       
       const isCorrect = correct_answer === answer_selected;
@@ -262,16 +252,12 @@ const Game = () => {
         isCorrect,
         correctAnswer: correct_answer
       });
-
       console.log("current Answer:", currentAnswer);
-
 
       if (isCorrect) {
         setScore((prev) => prev + 1);
       }
-
       setShowCorrectAnswer(true);
-
       if (number === TOTAL_QUESTIONS - 1) {
         // the timer is stopped
         setTimerRunning(false);
@@ -282,15 +268,12 @@ const Game = () => {
        
        navigate('/menu/gamestart');
    }
-
    const UserRecord = () => {
        navigate('/menu/userdata');
    }
-
    const UserMenu = () => {
         navigate('/menu');
    }
-
    const nextQuestion = () => {
         // concentrate on the specific instance at which the user
         // selects the next question..
@@ -304,11 +287,9 @@ const Game = () => {
             setShowCorrectAnswer(false);
         }
   };
-
       
     return (
      <>
-
       <GlobalStyle />
       <Wrapper />
           
@@ -332,7 +313,6 @@ const Game = () => {
            </div>
           }
 
-
           {!gameOver && number === TOTAL_QUESTIONS - 1 && userAnswers.length === TOTAL_QUESTIONS &&
             <div>
               
@@ -346,7 +326,6 @@ const Game = () => {
             </div>  
             
           }
-
           {!gameOver ? (
             <div className="setting">
               <p className="score">
@@ -357,7 +336,6 @@ const Game = () => {
               </p>
             </div>): null
           }
-
           {loading && (
               <p>
                 Loading Questions: ...
@@ -387,7 +365,6 @@ const Game = () => {
                   />
               </div>
             )}
-
             
             {!loading && !gameOver && userAnswers.length === number + 1 && number !== TOTAL_QUESTIONS - 1 ? (
                 <NextButton className="next" onClick={nextQuestion}>
@@ -398,5 +375,4 @@ const Game = () => {
       </>
   );
 }
-
 export default Game;

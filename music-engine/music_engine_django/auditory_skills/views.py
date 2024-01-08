@@ -19,11 +19,9 @@ from django.middleware.csrf import get_token
 from .models import CustomUser, IntervalQuizData
 from django.db.models import Avg, F, ExpressionWrapper, fields, FloatField
 from datetime import datetime
-
 def get_csrf_token(request):
     csrf_token = get_token(request)
     return JsonResponse({'csrfToken': csrf_token})
-
 class CreateUserView(APIView):
     def post(self, request, *args, **kwargs):
         #print("Request Data: " + str(request.data))
@@ -33,7 +31,6 @@ class CreateUserView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 @method_decorator(csrf_exempt, name='dispatch')
 class LoginView(View):
    
@@ -45,11 +42,9 @@ class LoginView(View):
             data = json.loads(request.body)
             username = data['username']
             password = data['password']
-
             # Authenticate user
             user = authenticate(request, username=username, password=password)
          
-
             if user is not None:
                 # Log the user in
                 login(request, user)
@@ -59,10 +54,8 @@ class LoginView(View):
                 return JsonResponse({'message': 'Login successful', 'username': username}, status=200)
             else:
                 return JsonResponse({'message': 'Invalid username or password'}, status=401)
-
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
-
 #@method_decorator(csrf_exempt, name='dispatch')
 class StartGameView(APIView):
     #@method_decorator(login_required)
@@ -80,7 +73,6 @@ class StartGameView(APIView):
             quiz = IntervalQuiz(difficulty)
             if not quiz.questionsGenerated:
                 return JsonResponse({'error': 'Failed to generate questions'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
             response_data = {
                 'message': f'Game started with difficulty: {difficulty}',
                 'questionsData': quiz.questionsData,
@@ -90,7 +82,6 @@ class StartGameView(APIView):
             print("An exception occured in StartGameView " + str(e))
             return JsonResponse({'error': str(e)}, status=500)
     
-
 class SaveGameDataView(APIView):
     def post(self, request, *args, **kwargs):
         try:
@@ -99,10 +90,12 @@ class SaveGameDataView(APIView):
             username = data.get('username')  # Assuming you send the username with the request
             score = data.get('score')
             totalTime = data.get('totalTime')
+            questionTimes = data.get('questionTimes')
             userAnswers = data.get('userAnswers')
             questionsData = data.get('questionsData')
             difficulty = data.get('difficulty')
-
+            print("question times: " + str(questionTimes))
+            print("total time: " + str(totalTime))
             # Get or create the user
             try:
                 # Get or create the user
@@ -116,6 +109,7 @@ class SaveGameDataView(APIView):
                     gameDifficulty=difficulty,
                     questionsData=questionsData,
                     userAnswers=userAnswers,
+                    questionTimes=questionTimes,
                     numOfQuestions = 10,
                 )
                 # You may want to return some response if needed
@@ -128,13 +122,11 @@ class SaveGameDataView(APIView):
                 return JsonResponse({'error': 'Multiple users with the same username'}, status=500)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
-
 class LeaderboardView(View):
     def get(self, request, *args, **kwargs):
         try:
             difficulty_levels = ['easy', 'medium', 'hard', 'insane']
             leaderboard_by_difficulty = {}
-
             for difficulty in difficulty_levels:
                 # Calculate performanceScore, average it, and order by it for each difficulty
                 leaderboard_data = (
@@ -150,17 +142,15 @@ class LeaderboardView(View):
                     .annotate(avgPerformance=Avg('performanceScore', output_field=FloatField()))
                     .order_by('-avgPerformance')[:10]
                 )
-
                 # Convert QuerySet to a list of dictionaries
                 leaderboard_list = list(leaderboard_data)
-                print(leaderboard_list)
+                #print(leaderboard_list)
                 # Store the leaderboard list for each difficulty
                 leaderboard_by_difficulty[difficulty] = leaderboard_list
             #print("Leaderboard data by difficulty: " + str(leaderboard_by_difficulty))
             return JsonResponse({'leaderboard': leaderboard_by_difficulty}, status=200)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
-
 @method_decorator(csrf_exempt, name='dispatch')
 class UserRecord(View):
     def post(self, request, *args, **kwargs):
@@ -169,26 +159,22 @@ class UserRecord(View):
             currentUser = data['currentUser']
             timeFrame = data['relevantTimeFrame']
             difficulty = data['difficulty']
-            print("Current User: " + str(currentUser))
-            print("Time Frame: " + str(timeFrame))
-            print("Difficulty: " + str(difficulty))
-
+            # print("Current User: " + str(currentUser))
+            # print("Time Frame: " + str(timeFrame))
+            # print("Difficulty: " + str(difficulty))
             userData = IntervalQuizData.objects.filter(user__username=currentUser)
-
              # Convert date strings to datetime objects
             try:
                 start_date = datetime.strptime(timeFrame['startDate'], "%Y-%m-%dT%H:%M:%S.%fZ") if timeFrame['startDate'] else None
                 end_date = datetime.strptime(timeFrame['endDate'], "%Y-%m-%dT%H:%M:%S.%fZ") if timeFrame['endDate'] else None
             except Exception as date_conversion_error:
                 return JsonResponse({'error': f'Date conversion error: {str(date_conversion_error)}'}, status=500)
-
             # Filter based on time frame
             if start_date and end_date:
                 try:
                     userData = userData.filter(datePlayed__range=[start_date, end_date])
                 except Exception as time_frame_filter_error:
                     return JsonResponse({'error': f'Time frame filter error: {str(time_frame_filter_error)}'}, status=500)
-
             # Filter based on difficulty
             if difficulty != 'All':
                 userData = userData.filter(gameDifficulty=difficulty.lower())
@@ -205,6 +191,5 @@ class UserRecord(View):
             ]
             print(serialized_data)
             return JsonResponse({'message': 'User record retrieved', 'data': serialized_data}, status=200)
-
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)

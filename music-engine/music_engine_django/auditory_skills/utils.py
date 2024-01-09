@@ -1,0 +1,1 @@
+intervalQuizGameMP3Dir = "curly-disco\music-quiz\src\mp3 files"

@@ -1,0 +1,22 @@
+import librosa
+import librosa.display
+import IPython.display as ipd
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Function takes in an audiofile (as a string) and outputs the mel-frequency cepstral coefficients
+def getMFCC(audioFile):
+    # Load audiofile using librosa
+    signal, samplingRate = librosa.load(audioFile)
+
+    # Extract MFCCs
+    mfccs = librosa.feature.mfcc(signal, n_mfcc = 13, sr = samplingRate)
+    print(mfccs.shape)
+
+def visualizeMFCCs(mfccs):
+    plt.figure(figsize=(25,10))
+    librosa.display.specshow(mfccs,
+                            x_axis="time",
+                            sr = mfccs.sr)
+    plt.colorbar(format="%+2f")
+    plt.show()

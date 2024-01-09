@@ -17,6 +17,7 @@ from django.middleware.csrf import get_token
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
 from .models import CustomUser, IntervalQuizData
+from .utils import intervalQuizGameMP3Dir
 from django.db.models import Avg, F, ExpressionWrapper, fields, FloatField
 from datetime import datetime
 def get_csrf_token(request):
@@ -70,7 +71,7 @@ class StartGameView(APIView):
             print(difficulty)
             currentUser = request.data['currentUser']
             print("current user: " + str(currentUser))
-            quiz = IntervalQuiz(difficulty)
+            quiz = IntervalQuiz(difficulty, 10, intervalQuizGameMP3Dir)
             if not quiz.questionsGenerated:
                 return JsonResponse({'error': 'Failed to generate questions'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             response_data = {

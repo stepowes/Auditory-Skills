@@ -19,7 +19,7 @@ AudioSegment.converter = ffmpeg_path
 
 
 
-def createQuestion(freq1, freq2, duration, timbre, filename):
+def createQuestion(freq1, freq2, duration, timbre):
     # tones = []
     # if not togetherOnly:
     #     tones.append(generate_tone(freq1, duration))
@@ -34,12 +34,8 @@ def createQuestion(freq1, freq2, duration, timbre, filename):
     
     # Concatenate tones if needed
     output_tone = tone1 + tone2  # Add all tones together
-    output_directory = currentDirectory
-    for i in range(3):
-        output_directory = os.path.dirname(output_directory)
-    output_directory = os.path.join(output_directory, 'curly-disco','music-quiz','src', 'mp3 files')
-    # Export to an audio file (e.g., mp3)
-    output_tone.export(os.path.join(output_directory, filename + '.mp3'), format="mp3")
+    return output_tone
+    
 
 
 def generate_tone(frequency, duration, volume=0.5):

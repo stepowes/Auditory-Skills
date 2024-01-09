@@ -1,24 +1,31 @@
 from .musical_data import getNoteFrequency, NOTES, INTERVALS
+from .utils import intervalQuizGameMP3Dir
 from .audio import createQuestion
 import os
 import random
 
 currentDirectory = os.path.dirname(os.path.abspath(__file__))
 
+# Navigate to root directory
 for i in range(3):
     currentDirectory = os.path.dirname(currentDirectory)
-mp3Directory = os.path.join(currentDirectory, 'curly-disco','music-quiz','src', 'mp3 files')
+rootDirectory = currentDirectory
 
 #This class defines our interval quiz game
 class IntervalQuiz():   
     
-    def __init__(self, difficulty):
+    def __init__(self, difficulty, numQuestions, pathFromRoot):
         self.difficulty = difficulty
         self.score = 0
         self.questionsData = {}
-        self.numberOfQuestions = 10
+        self.numberOfQuestions = numQuestions
         self.questionsGenerated = False
-        clearDirectory(mp3Directory)
+        self.outputDirectory = os.path.join(rootDirectory, pathFromRoot)
+        print("ROOT DIR: " + rootDirectory)
+        print("pathFromRootGiven: " + pathFromRoot)
+        # If in game, clear directory for new questions to load in
+        if pathFromRoot == intervalQuizGameMP3Dir:
+            clearDirectory(self.outputDirectory)
         if self.difficulty == 'easy':
             self.octaveRange = [4,5]
             self.octaveDiffMax = 1
@@ -101,7 +108,10 @@ class IntervalQuiz():
                 secondOctave = random.choice(secondOctaveDescendingRange)
                 secondFrequency = getNoteFrequency(firstNote, secondOctave, interval, -1)
         self.questionsData[str(problemNumber)] = {'freq1': firstFrequency, 'freq2': secondFrequency,'interval': interval}
-        createQuestion(firstFrequency, secondFrequency, 1, 0, "problem" + str(problemNumber))    
+        fileName = "problem" + str(problemNumber)
+        output_tone = createQuestion(firstFrequency, secondFrequency, 1, 0)
+        output_tone.export(os.path.join(self.outputDirectory, fileName + '.mp3'), format="mp3")
+
 
 
 #This helper function simply deletes the contents of the provided path.abs
@@ -125,7 +135,7 @@ def clearDirectory(directory_path):
         
 
 def testCode():
-    game = IntervalQuiz("insane")
+    game = IntervalQuiz("insane", 10, intervalQuizGameMP3Dir)
     print(game.questionsData)
         
 

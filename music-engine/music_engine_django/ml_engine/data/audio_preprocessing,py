@@ -3,20 +3,45 @@ import librosa.display
 import IPython.display as ipd
 import matplotlib.pyplot as plt
 import numpy as np
+import os
+
+currentDirectory = os.path.dirname(os.path.abspath(__file__))
+datasets_dir = "/datasets/"
 
 # Function takes in an audiofile (as a string) and outputs the mel-frequency cepstral coefficients
-def getMFCC(audioFile):
+def getMFCCs(audioFile):
     # Load audiofile using librosa
     signal, samplingRate = librosa.load(audioFile)
 
     # Extract MFCCs
-    mfccs = librosa.feature.mfcc(signal, n_mfcc = 13, sr = samplingRate)
+    mfccs = librosa.feature.mfcc(y=signal, sr = samplingRate, n_mfcc=13)
     print(mfccs.shape)
+    return mfccs, signal, samplingRate
 
-def visualizeMFCCs(mfccs):
+def getDatasetMFCCs(dataset_dir):
+    files = os.listdir(dataset_dir)
+
+    datasetMFCCs = []
+    audioFiles = [file for file in files if file.endswith('.mp3')]
+    for audioFile in audioFiles:
+        audioFilePath = os.path.join(dataset_dir, audioFile)
+        MFCCs = getMFCCs(audioFilePath)
+        datasetMFCCs.append(MFCCs)
+    return datasetMFCCs
+
+def visualizeMFCCs(mfccs, signal, samplingRate):
     plt.figure(figsize=(25,10))
     librosa.display.specshow(mfccs,
                             x_axis="time",
-                            sr = mfccs.sr)
+                            sr = samplingRate)
     plt.colorbar(format="%+2f")
     plt.show()
+
+def traverseDirectory(dirPath):
+    pass
+
+def test():
+    mfccs, signal, samplingRate = getMFCCs(currentDirectory+datasets_dir+"insane/problem2.mp3")
+    #visualizeMFCCs(mfccs, signal, samplingRate)
+
+test()

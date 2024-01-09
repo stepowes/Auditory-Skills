@@ -22,9 +22,10 @@ def generateDataset(datasetName, numOfFiles, difficulty):
     dataset_dir = createDatasetDir(datasetName)
     quiz = IntervalQuiz(difficulty, numOfFiles, pathFromRoot)
 
-def createDatasetDir(datasetName):
-    dataset_dir = os.path.join(base_dir, datasetName)
+def create_dataset_dir(self, base_dir, dataset_name):
+    dataset_dir = os.path.join(base_dir, dataset_name)
     os.makedirs(dataset_dir, exist_ok=True)
     return dataset_dir
+
 
 generateDataset("test", 20, "easy")
